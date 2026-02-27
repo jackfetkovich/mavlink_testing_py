@@ -23,6 +23,10 @@ SYS_STAT_INTERVAL = 0.1
 
 # ------------------- State -------------------
 mvl_armed = False
+mission_upload_active = False
+mission_items = -1
+mission_items_idx = -1
+
 sys_stat_count = 0
 
 def now_s() -> float:
@@ -54,11 +58,47 @@ def handle_param_request_list(_m: mavutil.mavlink.MAVLink_message, master: mavut
 
 def handle_mission_request_list(_m: mavutil.mavlink.MAVLink_message, master: mavutil.mavfile) -> None:
     # Reply that we have zero mission items
-    master.mav.mission_count_send(
+    master.mav.mission_request_int_send(
         target_system=MVL_SYSID,
         target_component=MVL_COMPID,
         count=0
     )
+
+def handle_mission_count(_m: mavutil.mavlink.MAVLink_message, master: mavutil.mavfile) -> None:
+    # Reply that we have zero mission items
+    print(_m)
+
+    global mission_upload_active
+    global mission_items_idx
+    global mission_items
+    
+    if not mission_upload_active:
+        mission_upload_active = True
+        mission_items = _m.count
+        print(f"# Mission items: {mission_items}")
+
+    mission_items_idx += 1
+    
+    if(mission_items_idx < mission_items):
+        print(f"Mission item index: {mission_items_idx}")
+        master.mav.mission_request_int_send(
+            target_system=MVL_SYSID,
+            target_component=MVL_COMPID,
+            seq=mission_items_idx
+        )
+    else:
+        print(f"Accepting mission...")
+        master.mav.mission_ack_send(
+            target_system=MVL_SYSID,
+            target_component=MVL_COMPID,
+            type=0
+        )
+        mission_upload_active = False
+        mission_items_idx=-1
+        mission_items =0
+
+
+def handle_mission_item_int(_m: mavutil.mavlink.MAVLink_message, master: mavutil.mavfile)
 
 def handle_command_long(m: mavutil.mavlink.MAVLink_message, master: mavutil.mavfile) -> None:
     global mvl_armed
@@ -96,6 +136,12 @@ def handle_command_long(m: mavutil.mavlink.MAVLink_message, master: mavutil.mavf
             command=mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
             result=mavutil.mavlink.MAV_RESULT_ACCEPTED,
         )
+
+    elif cmd == mavutil.mavlink.MAV_CMD_NAV_WAYPOINT:
+        print("WAYPOINT COMMAND RECEIVED")
+
+    else:
+        print("OTHER CMD RECEIVED")
 
 # ------------------- Periodic TX -------------------
 def send_heartbeat(master: mavutil.mavfile) -> None:
@@ -194,6 +240,12 @@ def main() -> None:
                     handle_command_long(m, master)
                 elif mid == mavutil.mavlink.MAVLINK_MSG_ID_MISSION_REQUEST_LIST:
                     handle_mission_request_list(m, master)
+                elif mid == mavutil.mavlink.MAVLINK_MSG_ID_HEARTBEAT:
+                    pass
+                elif mid == mavutil.mavlink.MAVLINK_MSG_ID_MISSION_COUNT:
+                    handle_mission_count(m,master)
+                else:
+                    print(mid)
 
         # Periodic sends
         t = now_s()
