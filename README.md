@@ -7,19 +7,19 @@ Test Method 1: Jetson Nano / Raspberry Pi (ROS 2 Humble)
   Setup (2 terminals) 
 >  > source /opt/ros/humble/setup.bash
 Terminal 1 — Run script
->  >  python3 barebones_mavlink_ros2.py
+$python3 barebones_mavlink_ros2.py
 Terminal 2 — Monitor topic
->  > ros2 topic list
->  >ros2 topic echo /mavtopic 
+$ros2 topic list
+$ros2 topic echo /mavtopic 
 
 (Raw Idea)Test Method 2: Local (WSL with ROS 2 Humble) - Run QGC via a dummy python script for mavlink messages 
   Setup (2 terminals) 
->  > source /opt/ros/humble/setup.bash
+$source /opt/ros/humble/setup.bash
 Terminal 1 — Run script
->  >  python3 barebones_mavlink_ros2.py
+$python3 barebones_mavlink_ros2.py
 Terminal 2 — Monitor topic
->  > ros2 topic list
->  >ros2 topic echo /mavtopic 
+$ros2 topic list
+$ros2 topic echo /mavtopic 
 
 Success Criteria
 Script runs without errors
